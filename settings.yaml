@@ -1,0 +1,17 @@
+seed: 42
+
+storage:
+  source_dir: "datasets/source"
+  staging_dir: "datasets/staging"
+  ready_dir: "datasets/ready"
+
+schema:
+  feature_count: 136
+  target_count: 7
+  horizon_years: 40
+  use_float32: true
+
+subset:
+  enabled: true
+  fraction: 0.1
+  group_col: null

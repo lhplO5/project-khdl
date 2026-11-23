@@ -1,25 +1,23 @@
-# Byte-compiled / optimized / DLL files
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
-
-# Virtual environments
 .venv/
 venv/
 env/
 
-# Jupyter Notebook
+# Jupyter
 .ipynb_checkpoints/
 
-# Data files (do not commit large datasets to Git)
-data/raw/*
-data/interim/*
-data/processed/*
-!data/raw/.gitkeep
-!data/interim/.gitkeep
-!data/processed/.gitkeep
+# Large datasets (kept locally only)
+datasets/source/*
+datasets/staging/*
+datasets/ready/*
+!datasets/source/.gitkeep
+!datasets/staging/.gitkeep
+!datasets/ready/.gitkeep
 
-# Models & checkpoints
+# Trained weights & serialized artifacts
 *.pt
 *.pth
 *.ckpt
@@ -27,7 +25,7 @@ data/processed/*
 *.joblib
 *.h5
 
-# Credentials & OS files
+# Secrets & OS junk
 kaggle.json
 .env
 .DS_Store
