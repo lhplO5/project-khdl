@@ -19,7 +19,7 @@ Dự án này sử dụng bộ dữ liệu **CarbonGlobe** (từ cuộc thi [IEE
 
 ## 3. Chi tiết các chiều dữ liệu & 7 biến mục tiêu (`TREE_BAND`)
 
-* **Không gian:** $54.152$ điểm lưới đất liền toàn cầu (độ phân giải $0.5^\circ$, nằm trong lưới $360 \times 720$).
+* **Không gian:** $54.152$ điểm lưới đất liền toàn cầu (độ phân giải $0.5^\circ$, ánh xạ trên `mask2d.npy` kích thước $360 \times 720$, trong đó `0` = đại dương, `1` = train `3.035` sites, `2` = val `338` sites, `3` = test `50.779` sites).
 * **Tuổi rừng khởi tạo (`AGES`):** 15 mức: `[1, 10, 20, 30, 50, 70, 100, 150, 200, 250, 300, 350, 400, 450, 500]` năm.
 * **Thời gian:** 40 năm dự báo (mảng $Y$ có 41 năm, trong đó năm 0 là trạng thái ban đầu `y0` đã biết), mỗi năm gồm 12 tháng.
 * **Đầu vào ($X$ — 136 kênh):** Bao gồm các nhóm biến khí tượng (nhiệt độ, lượng mưa, bức xạ sóng ngắn/dài, độ ẩm, tốc độ gió), nồng độ $\text{CO}_2$ khí quyển, đặc tính lý-hóa của đất (độ sâu, thành phần cát/sét, pH, độ dẫn thủy lực) và ngữ cảnh địa hình/sinh thái.

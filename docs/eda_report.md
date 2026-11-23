@@ -46,15 +46,19 @@ Các mục tiêu trọng tâm gồm:
   * Vì vậy, nhóm chọn **huấn luyện mô hình trong không gian chuẩn hóa Z-score** (để 7 biến mục tiêu có trọng số tương đương nhau trong hàm mất mát) và áp dụng **Winsorizing ở ngưỡng `[-10, 10]`** để chỉ loại bỏ nhiễu/lỗi số học cực đoan.
 
 ### 2.3. Mặt nạ Không gian Toàn cầu (`mask2d`) & Chu kỳ Mùa 12 tháng
-![Lưới không gian và Chu kỳ mùa 12 tháng](figures/fig03_spatial_grid_and_seasonality.png)
+![Bản đồ phân chia tập dữ liệu toàn cầu mask2d](figures/fig03a_real_mask2d_split.png)
+![Bản đồ 3 biến mục tiêu toàn cầu năm 40](figures/fig03b_real_global_targets_map.png)
+![Chu kỳ mùa 12 tháng](figures/fig03_seasonality_profile.png)
 
-* **Quan sát từ biểu đồ:**
-  * `mask2d.npy` có kích thước `360 × 720` (độ phân giải $0.5^\circ \times 0.5^\circ$), đóng vai trò bảng tra cứu hai chiều để chiếu bất kỳ vector dự báo theo điểm lưới nào lên bản đồ thế giới qua hàm `to_global_grid()` trong `src/dataset.py`.
-  * Đường cong trung bình theo 12 tháng cho thấy **tính chu kỳ mùa rõ rệt**: biến khí tượng `X[0]` đạt đỉnh vào nửa đầu năm và giảm vào nửa cuối năm, kéo theo sự dao động đồng pha của năng suất quang hợp `gpp`.
+* **Quan sát từ bản đồ thực tế CarbonGlobe:**
+  * `mask2d.npy` có kích thước `360 × 720` (độ phân giải $0.5^\circ \times 0.5^\circ$), mã hóa `0` (đại dương), `1` (`3.035` train sites), `2` (`338` val sites), `3` (`50.779` test sites) — lấy mẫu phân bố đều ~`1/16` trên toàn bộ `54.152` điểm đất liền toàn cầu.
+  * Bản đồ toàn cầu tại năm 40 (tuổi rừng 100) cho thấy sự phân hóa sinh thái rất rõ theo vĩ độ và vùng khí hậu: `height`, `agb`, `gpp` đạt giá trị cao nhất ở vành đai rừng mưa nhiệt đới (Amazon, lưu vực Congo, Đông Nam Á) và giảm dần về vùng ôn đới, lãnh nguyên/sa mạc.
+  * Đường cong trung bình theo 12 tháng minh họa tính chu kỳ mùa đồng pha giữa biến khí tượng và năng suất quang hợp (`GPP`, `NPP`).
 * **Ý nghĩa cho Feature Engineering (Tuần 3):**
   * Ở baseline Tuần 2 (`src/features.py`), ta lấy trung bình 12 tháng thành vector năm (`136` chiều) để khớp với giao thức chuẩn. Tuy nhiên, việc nén 12 tháng thành 1 giá trị trung bình làm mất biên độ mùa vụ (mùa hè nóng ẩm vs mùa đông khô lạnh). Ở Tuần 3, có thể bổ sung thêm `std` hoặc `min/max` theo mùa để giảm sai số `delta`.
 
 ### 2.4. Kiểm chứng Trước / Sau Chuẩn hóa & Làm sạch (`Winsorizing`)
+![Phân phối thực tế trước và sau Z-score](figures/fig04b_real_zscore_channels.png)
 ![So sánh Trước và Sau làm sạch](figures/fig04_cleaning_before_after.png)
 
 * **Quan sát định lượng:**
@@ -63,6 +67,7 @@ Các mục tiêu trọng tâm gồm:
 * **Kết luận:** Dữ liệu đầu ra trong `data/processed/` đạt trạng thái sạch hoàn toàn, sẵn sàng cho mọi thuật toán cây quyết định và mạng nơ-ron.
 
 ### 2.5. Quỹ đạo 40 năm & Đường cong Sinh trưởng theo 15 Tuổi rừng
+![Quỹ đạo 40 năm thực tế của AGB và GPP](figures/fig05b_real_40yr_trajectories.png)
 ![Quỹ đạo 40 năm và 15 mức tuổi rừng](figures/fig05_40yr_trajectories_and_ages.png)
 
 * **Quan sát từ biểu đồ:**
