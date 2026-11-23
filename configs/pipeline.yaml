@@ -2,16 +2,28 @@ seed: 42
 
 paths:
   raw_dir: "data/raw"
+  global_subdir: "data_global"
+  stats_subdir: "data_stats"
   interim_dir: "data/interim"
   processed_dir: "data/processed"
 
-schema:
-  feature_count: 136
-  target_count: 7
-  horizon_years: 40
-  use_float32: true
+carbonglobe:
+  n_sites: 54152
+  n_years: 40
+  n_months: 12
+  n_features: 136
+  n_targets: 7
+  grid_shape: [360, 720]
+  tree_band: ["height", "agb", "soil", "lai", "gpp", "npp", "rh"]
+  ages: [1, 10, 20, 30, 50, 70, 100, 150, 200, 250, 300, 350, 400, 450, 500]
+  ml_ready_file: "res_train4_test8.npz"
+  stats_file: "data_stats.npz"
+  mask_file: "mask2d.npy"
+
+cleaning:
+  clip_z_range: [-10.0, 10.0]
+  eps_std: 1.0e-6
 
 subset:
   enabled: true
-  fraction: 0.1
-  group_col: null
+  max_sites: 500

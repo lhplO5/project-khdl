@@ -1,118 +1,54 @@
-"""Pipeline tiền xử lý và làm sạch dữ liệu CarbonGlobe."""
+"""Làm sạch mảng đa chiều CarbonGlobe: xử lý NaN/Inf và giới hạn ngoại lai sau chuẩn hóa."""
 
-import re
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Tuple
 
 import numpy as np
-import pandas as pd
-
-from src.dataset import shrink_dtypes
 
 
-def normalize_column_names(df: pd.DataFrame) -> pd.DataFrame:
-    """Chuẩn hóa tên cột về dạng snake_case chữ thường."""
-    renamed = {}
-    for col in df.columns:
-        clean = re.sub(r"[^0-9a-zA-Z]+", "_", str(col).strip()).strip("_").lower()
-        renamed[col] = clean
-    return df.rename(columns=renamed)
+def sanitize_non_finite(arr: np.ndarray, channel_fill: np.ndarray | None = None) -> Tuple[np.ndarray, int]:
+    """Thay thế NaN/Inf theo giá trị trung bình từng kênh (hoặc 0.0) và trả về số phần tử đã sửa."""
+    out = arr.astype(np.float32, copy=True)
+    bad_mask = ~np.isfinite(out)
+    n_bad = int(bad_mask.sum())
+    if n_bad == 0:
+        return out, 0
+
+    if channel_fill is not None:
+        fill_values = np.broadcast_to(channel_fill.astype(np.float32), out.shape)
+        out[bad_mask] = fill_values[bad_mask]
+    else:
+        out[bad_mask] = 0.0
+    return out, n_bad
 
 
-def drop_unusable_columns(
-    df: pd.DataFrame,
-    max_missing_ratio: float = 0.5,
-    protected_cols: Optional[List[str]] = None,
-) -> Tuple[pd.DataFrame, List[str]]:
-    """Loại bỏ cột hằng số và cột có tỷ lệ giá trị khuyết vượt ngưỡng."""
-    protected = set(protected_cols or [])
-    to_drop: List[str] = []
-
-    for col in df.columns:
-        if col in protected:
-            continue
-        if df[col].isna().mean() > max_missing_ratio or df[col].nunique(dropna=True) <= 1:
-            to_drop.append(col)
-
-    return df.drop(columns=to_drop), to_drop
+def clip_normalized_outliers(
+    arr: np.ndarray,
+    z_min: float = -10.0,
+    z_max: float = 10.0,
+) -> Tuple[np.ndarray, int]:
+    """Giới hạn các giá trị ngoại lai cực đoan trong không gian chuẩn hóa Z-score."""
+    n_clipped = int(((arr < z_min) | (arr > z_max)).sum())
+    if n_clipped == 0:
+        return arr, 0
+    return np.clip(arr, z_min, z_max).astype(np.float32), n_clipped
 
 
-def impute_missing_values(
-    df: pd.DataFrame,
-    group_col: Optional[str] = None,
-    time_col: Optional[str] = None,
-) -> pd.DataFrame:
-    """Điền khuyết dữ liệu: nội suy theo chuỗi thời gian nếu có khóa nhóm, sau đó dùng median."""
-    out = df.copy()
-    numeric_cols = out.select_dtypes(include=[np.number]).columns.tolist()
+def clean_carbonglobe_arrays(
+    x_norm: np.ndarray,
+    y_norm: np.ndarray,
+    clip_z_range: Tuple[float, float] = (-10.0, 10.0),
+) -> Tuple[np.ndarray, np.ndarray, Dict[str, int]]:
+    """Làm sạch cặp mảng (X, Y) đã chuẩn hóa và trả về thống kê số điểm đã xử lý."""
+    x_clean, x_bad = sanitize_non_finite(x_norm)
+    y_clean, y_bad = sanitize_non_finite(y_norm)
 
-    if group_col and time_col and group_col in out.columns and time_col in out.columns:
-        out = out.sort_values([group_col, time_col]).reset_index(drop=True)
-        out[numeric_cols] = (
-            out.groupby(group_col)[numeric_cols]
-            .transform(lambda s: s.interpolate(method="linear", limit_direction="both"))
-        )
+    x_clean, x_clipped = clip_normalized_outliers(x_clean, clip_z_range[0], clip_z_range[1])
+    y_clean, y_clipped = clip_normalized_outliers(y_clean, clip_z_range[0], clip_z_range[1])
 
-    for col in numeric_cols:
-        if out[col].isna().any():
-            median_val = out[col].median()
-            fill_val = 0.0 if pd.isna(median_val) else median_val
-            out[col] = out[col].fillna(fill_val)
-
-    return out
-
-
-def clip_outliers(
-    df: pd.DataFrame,
-    lower_q: float = 0.005,
-    upper_q: float = 0.995,
-    exclude_cols: Optional[List[str]] = None,
-) -> pd.DataFrame:
-    """Giới hạn giá trị ngoại lai theo phân vị (winsorizing) cho các cột số."""
-    out = df.copy()
-    excluded = set(exclude_cols or [])
-    numeric_cols = [
-        c for c in out.select_dtypes(include=[np.number]).columns if c not in excluded
-    ]
-
-    for col in numeric_cols:
-        lo = out[col].quantile(lower_q)
-        hi = out[col].quantile(upper_q)
-        if pd.notna(lo) and pd.notna(hi) and lo < hi:
-            out[col] = out[col].clip(lower=lo, upper=hi)
-
-    return out
-
-
-def clean_dataset(
-    df: pd.DataFrame,
-    max_missing_ratio: float = 0.5,
-    group_col: Optional[str] = None,
-    time_col: Optional[str] = None,
-    protected_cols: Optional[List[str]] = None,
-    clip_quantiles: Tuple[float, float] = (0.005, 0.995),
-) -> Tuple[pd.DataFrame, Dict[str, object]]:
-    """Chạy toàn bộ chuỗi làm sạch dữ liệu và trả về bảng sạch kèm metadata."""
-    initial_shape = df.shape
-    cleaned = normalize_column_names(df)
-    cleaned = cleaned.drop_duplicates().reset_index(drop=True)
-    cleaned, dropped_cols = drop_unusable_columns(
-        cleaned,
-        max_missing_ratio=max_missing_ratio,
-        protected_cols=protected_cols,
-    )
-    cleaned = impute_missing_values(cleaned, group_col=group_col, time_col=time_col)
-    cleaned = clip_outliers(
-        cleaned,
-        lower_q=clip_quantiles[0],
-        upper_q=clip_quantiles[1],
-        exclude_cols=protected_cols,
-    )
-    cleaned = shrink_dtypes(cleaned)
-
-    summary: Dict[str, object] = {
-        "initial_shape": initial_shape,
-        "final_shape": cleaned.shape,
-        "dropped_cols": dropped_cols,
-        "remaining_nulls": int(cleaned.isna().sum().sum()),
+    stats = {
+        "x_non_finite_fixed": x_bad,
+        "y_non_finite_fixed": y_bad,
+        "x_outliers_clipped": x_clipped,
+        "y_outliers_clipped": y_clipped,
     }
-    return cleaned, summary
+    return x_clean, y_clean, stats

@@ -1,23 +1,22 @@
-# Báo cáo tiến độ Tuần 1 (Sprint 1)
+# Báo cáo tiến độ Tuần 1 (Hoàn thành cả phần việc Tuần 1 & Tuần 2)
 
 - **Chủ đề:** Dự báo chu trình carbon & hệ sinh thái đất toàn cầu (CarbonGlobe — IEEE BigData Cup 2026).
-- **Mục tiêu tuần:** Hoàn thiện trọn vẹn hạ tầng kỹ thuật và pipeline **Thu thập $\rightarrow$ Kiểm toán $\rightarrow$ Làm sạch dữ liệu**.
+- **Trạng thái:** Đã hoàn thiện trọn vẹn khối lượng kỹ thuật của **Tuần 1 (Setup & Kiểm toán)** và **Tuần 2 (Làm sạch, EDA & Feature Engineering)** theo đúng schema `.npz`/`.npy` thực tế từ notebook hướng dẫn chính thức.
 
 ## Các đầu việc đã hoàn thành
-1. **Chốt bài toán & chiến lược tính toán:**
-   - Bài toán hồi quy đa đầu ra theo chuỗi thời gian: dự báo 7 chỉ số hệ sinh thái từ 136 biến môi trường qua chuỗi 40 năm.
-   - Đánh giá phần cứng: chạy CPU cho `LightGBM`/`XGBoost` với bộ nhớ tối ưu `float32`; dự phòng Kaggle/Colab GPU miễn phí nếu mở rộng sang Deep Learning.
-2. **Xây dựng trọn bộ Pipeline Kỹ thuật Dữ liệu (`src/`):**
-   - `src/ingest.py`: Tích hợp Kaggle CLI tải và giải nén tự động dữ liệu về `data/raw/`.
-   - `src/dataset.py`: Đọc CSV/Parquet, ép kiểu `float32/int32` giảm 50% RAM, lấy mẫu phân tầng tái lập được.
-   - `src/profiling.py`: Kiểm toán tự động missing values, cột hằng số, khóa trùng lặp và ngoại lai theo IQR, xuất JSON report.
-   - `src/clean.py`: Chuẩn hóa tên cột, lọc cột vô ích, nội suy chuỗi thời gian theo từng site, winsorizing ngoại lai và xuất Parquet sạch sang `data/processed/`.
-   - `src/run_sprint1.py`: Script CLI chạy end-to-end toàn bộ pipeline (hỗ trợ `--synthetic` mô phỏng 136 biến + 7 mục tiêu để kiểm thử trước).
-3. **Kiểm thử tự động & Tài liệu:**
-   - Viết bộ test `tests/test_sprint1.py` (`pytest`) kiểm tra schema, audit và logic làm sạch.
-   - Hoàn thiện tài liệu kiến trúc pipeline (`docs/data_pipeline.md`) và đặc tả biến (`docs/problem_scope.md`).
+1. **Nắm vững cấu trúc dữ liệu thực tế CarbonGlobe (`docs/problem_scope.md`):**
+   - Đồng bộ toàn bộ mã nguồn theo định dạng `res_train4_test8.npz`, `data_stats.npz`, `mask2d.npy`, 7 biến mục tiêu `TREE_BAND` (`height`, `agb`, `soil`, `lai`, `gpp`, `npp`, `rh`) và 15 mức tuổi rừng `AGES`.
+2. **Hoàn thiện trọn bộ Pipeline Tuần 1 & Tuần 2 (`src/`):**
+   - `src/ingest.py`: Tải và giải nén tự động bộ dữ liệu Kaggle vào `data/raw/`.
+   - `src/dataset.py`: Nạp `.npz`/`.npy`, chuẩn hóa/khôi phục Z-score, ánh xạ lưới 2D `(360, 720)`.
+   - `src/profiling.py`: Kiểm toán shape, RAM, NaN/Inf và thống kê phân vị của 7 biến mục tiêu.
+   - `src/clean.py`: Xử lý giá trị không hữu hạn và giới hạn ngoại lai chuẩn hóa (`[-10, 10]`).
+   - `src/features.py`: Xây dựng tập huấn luyện one-step-ahead `144 -> 7` (136 trung bình năm + 7 trạng thái năm trước + `age/500`).
+   - `src/run_sprint1_2.py`: Script CLI chạy end-to-end toàn bộ luồng.
+3. **Notebook trực quan hóa & Kiểm thử tự động:**
+   - Hoàn thiện & chạy ra kết quả đầy đủ 2 notebook: `notebooks/schema_audit.ipynb` và `notebooks/eda_and_cleaning.ipynb` (kèm biểu đồ phân phối, ma trận tương quan 7 biến mục tiêu và bản đồ lưới 2D).
+   - Viết và chạy pass kiểm thử `tests/test_pipeline.py`.
 
-## Kế hoạch Tuần 2
-- Chạy `python -m src.ingest` để nạp bộ dữ liệu CarbonGlobe thật vào `data/raw/`.
-- Chạy `python -m src.run_sprint1 --input-file ...` để xuất báo cáo kiểm toán thực tế và dữ liệu sạch sang `data/processed/`.
-- Thực hiện EDA trực quan hóa (tương quan 136 biến, xu hướng 40 năm, phân bố không gian).
+## Kế hoạch tuần tiếp theo (Tuần 3)
+- Tải dữ liệu thật `res_train4_test8.npz` và `data_stats.npz` vào `data/raw/` rồi chạy `python -m src.run_sprint1_2`.
+- Huấn luyện các mô hình nền (`RandomForest`, `LightGBM`, `XGBoost`) và đánh giá theo giao thức **40-year autoregressive rollout** (`RMSE`, `MAE`, `R2`, `delta`, `cumulative`).

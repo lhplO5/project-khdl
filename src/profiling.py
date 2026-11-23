@@ -1,70 +1,54 @@
-"""Kiểm toán chất lượng dữ liệu: thống kê missing, cột hằng số, trùng lặp và ngoại lai."""
+"""Kiểm toán chất lượng dữ liệu mảng đa chiều CarbonGlobe (.npz / .npy)."""
 
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Sequence
 
 import numpy as np
-import pandas as pd
+
+from src.dataset import TREE_BAND
 
 
-def audit_dataframe(
-    df: pd.DataFrame,
-    key_cols: Optional[List[str]] = None,
-    iqr_factor: float = 3.0,
-) -> Dict[str, Any]:
-    """Tạo báo cáo kiểm toán chất lượng cho bảng dữ liệu đầu vào."""
-    n_rows, n_cols = df.shape
-    memory_mb = float(df.memory_usage(deep=True).sum() / 1e6)
-
-    missing_ratio = df.isna().mean()
-    cols_with_missing = {
-        col: round(float(ratio), 4)
-        for col, ratio in missing_ratio[missing_ratio > 0].sort_values(ascending=False).items()
-    }
-
-    constant_cols = [
-        col for col in df.columns if df[col].nunique(dropna=True) <= 1
-    ]
-
-    duplicate_rows = int(df.duplicated().sum())
-    duplicate_keys = (
-        int(df.duplicated(subset=key_cols).sum())
-        if key_cols and all(c in df.columns for c in key_cols)
-        else None
-    )
-
-    numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
-    outlier_summary: Dict[str, float] = {}
-    for col in numeric_cols:
-        series = df[col].dropna()
-        if series.empty:
-            continue
-        q1, q3 = series.quantile(0.25), series.quantile(0.75)
-        iqr = q3 - q1
-        if iqr == 0:
-            continue
-        lower, upper = q1 - iqr_factor * iqr, q3 + iqr_factor * iqr
-        outlier_rate = float(((series < lower) | (series > upper)).mean())
-        if outlier_rate > 0:
-            outlier_summary[col] = round(outlier_rate, 4)
-
-    top_outliers = dict(
-        sorted(outlier_summary.items(), key=lambda x: x[1], reverse=True)[:20]
-    )
+def audit_array(arr: np.ndarray, name: str) -> Dict[str, Any]:
+    """Kiểm tra shape, dtype, RAM, số lượng NaN/Inf và khoảng giá trị của mảng NumPy."""
+    nan_count = int(np.isnan(arr).sum())
+    inf_count = int(np.isinf(arr).sum())
+    finite_vals = arr[np.isfinite(arr)]
 
     return {
-        "n_rows": n_rows,
-        "n_cols": n_cols,
-        "memory_mb": round(memory_mb, 3),
-        "duplicate_rows": duplicate_rows,
-        "duplicate_keys": duplicate_keys,
-        "n_constant_cols": len(constant_cols),
-        "constant_cols": constant_cols,
-        "n_cols_with_missing": len(cols_with_missing),
-        "cols_with_missing": cols_with_missing,
-        "top_outlier_cols": top_outliers,
+        "name": name,
+        "shape": list(arr.shape),
+        "dtype": str(arr.dtype),
+        "memory_mb": round(float(arr.nbytes / 1e6), 3),
+        "nan_count": nan_count,
+        "inf_count": inf_count,
+        "nan_ratio": round(float(nan_count / arr.size), 6) if arr.size else 0.0,
+        "min": round(float(finite_vals.min()), 4) if finite_vals.size else None,
+        "max": round(float(finite_vals.max()), 4) if finite_vals.size else None,
+        "mean": round(float(finite_vals.mean()), 4) if finite_vals.size else None,
+        "std": round(float(finite_vals.std()), 4) if finite_vals.size else None,
     }
+
+
+def audit_targets_summary(
+    y_arr: np.ndarray,
+    target_names: Sequence[str] = TREE_BAND,
+) -> Dict[str, Dict[str, float]]:
+    """Thống kê phân phối vật lý cho từng biến trong 7 biến mục tiêu TREE_BAND."""
+    summary: Dict[str, Dict[str, float]] = {}
+    for idx, name in enumerate(target_names):
+        vals = y_arr[..., idx]
+        finite = vals[np.isfinite(vals)]
+        summary[name] = {
+            "nan_count": int(np.isnan(vals).sum()),
+            "min": round(float(finite.min()), 4) if finite.size else 0.0,
+            "p50": round(float(np.median(finite)), 4) if finite.size else 0.0,
+            "p95": round(float(np.percentile(finite, 95)), 4) if finite.size else 0.0,
+            "max": round(float(finite.max()), 4) if finite.size else 0.0,
+            "mean": round(float(finite.mean()), 4) if finite.size else 0.0,
+            "std": round(float(finite.std()), 4) if finite.size else 0.0,
+        }
+    return summary
 
 
 def save_audit_report(report: Dict[str, Any], output_path: str | Path) -> Path:
