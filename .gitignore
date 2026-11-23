@@ -1,0 +1,34 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+
+# Data files (do not commit large datasets to Git)
+data/raw/*
+data/interim/*
+data/processed/*
+!data/raw/.gitkeep
+!data/interim/.gitkeep
+!data/processed/.gitkeep
+
+# Models & checkpoints
+*.pt
+*.pth
+*.ckpt
+*.pkl
+*.joblib
+*.h5
+
+# Credentials & OS files
+kaggle.json
+.env
+.DS_Store
+Thumbs.db
