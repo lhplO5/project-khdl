@@ -25,11 +25,11 @@ Kaggle API (src/ingest.py)
 | Module | Vai trò chính | Hàm cốt lõi |
 | :--- | :--- | :--- |
 | `src/ingest.py` | Tải tự động dữ liệu từ Kaggle CLI và giải nén vào `data/raw/`. | `download_kaggle_competition()` |
-| `src/dataset.py` | Đọc `pipeline.yaml`, nạp `.npz`/`.npy` ở `float32`, chuẩn hóa/khôi phục Z-score và ánh xạ lưới `(360, 720)`. | `load_ml_ready_npz()`, `load_stats()`, `normalize_array()`, `denormalize_array()`, `to_global_grid()` |
+| `src/dataset.py` | Đọc `pipeline.yaml`, nạp `.npz`/`.npy` ở `float32`, chọn tập con site train có tái lập (`head`/`random`/`stratified`), chuẩn hóa/khôi phục Z-score và ánh xạ lưới `(360, 720)`. | `load_ml_ready_npz()`, `build_strata_from_target()`, `select_site_indices()`, `normalize_array()`, `to_global_grid()` |
 | `src/profiling.py` | Kiểm toán shape, RAM (MB), số lượng NaN/Inf, min/max/mean/std và bảng phân vị `p50/p95` cho 7 biến `TREE_BAND`. | `audit_array()`, `audit_targets_summary()`, `save_audit_report()` |
 | `src/clean.py` | Xử lý giá trị không hữu hạn (`NaN`, `±Inf`) và cắt ngưỡng ngoại lai cực đoan trong không gian chuẩn hóa. | `sanitize_non_finite()`, `clip_normalized_outliers()`, `clean_carbonglobe_arrays()` |
 | `src/features.py` | Chuyển đổi mảng 4D/5D sang bảng đặc trưng 2D one-step-ahead (`144 -> 7`). | `build_one_step_dataset()` |
-| `src/run_sprint1_2.py` | CLI điều phối toàn bộ luồng Tuần 1 + Tuần 2, hỗ trợ cờ `--synthetic` để kiểm chứng nhanh. | `create_synthetic_carbonglobe_files()`, `main()` |
+| `src/run_sprint1_2.py` | CLI điều phối toàn bộ luồng Tuần 1 + Tuần 2 | `main()` |
 
 ---
 
@@ -62,14 +62,20 @@ Việc dùng `eps_std = 1e-6` giúp ngăn lỗi chia cho `0` ở các kênh có 
 * Sau khi chạy `clean_carbonglobe_arrays`: `0` giá trị NaN/Inf còn lại, toàn bộ giá trị nằm trong `[-10.0, 10.0]`.
 * Kích thước đầu ra `build_one_step_dataset` khớp chính xác $(15 \times S \times 40, 144)$ và $(15 \times S \times 40, 7)$.
 
-### 4.2. Hướng dẫn chạy CLI
+### 4.2. Tập con dữ liệu thật cho Tuần 3–4
+Khi `subset.enabled: true`, pipeline chọn **200–500 site train** theo cấu hình seeded trong `configs/pipeline.yaml` (mặc định 500 site). Hai chế độ:
+
+- `random`: lấy mẫu ngẫu nhiên không hoàn lại theo `seed` toàn cục.
+- `stratified` (mặc định): phân tầng site theo 5 dải phân vị của `agb` tại trạng thái ban đầu, phân bổ tỷ lệ để phủ đủ dải sinh thái mà vẫn xấp xỉ phân phối toàn cầu.
+
+Tập `test8` **giữ nguyên 852 site** (`subset_test: false`) để mọi cấu hình được đánh giá rollout trên cùng một tập; chỉ bật `subset_test: true` cho thử nghiệm nhanh. Thống kê chuẩn hóa vẫn lấy từ `data_stats.npz` toàn cục, **không** tính lại trên subset. Chỉ số site được chọn được ghi vào `data/interim/audit_real.json`. Chi tiết quy tắc và phạm vi sử dụng: [Giao thức thực nghiệm](experiment_protocol.md).
+
+### 4.3. Hướng dẫn chạy CLI
 ```powershell
 # 1. Tải dữ liệu thật từ Kaggle (cần ~/.kaggle/kaggle.json)
 python -m src.ingest
 
-# 2. Chạy pipeline Tuần 1 & Tuần 2 trên dữ liệu thật
+# 2. Chạy pipeline Tuần 1 & Tuần 2 trên dữ liệu thật (kèm chọn subset)
 python -m src.run_sprint1_2
 
-# 3. Hoặc chạy kiểm chứng end-to-end bằng dữ liệu mô phỏng chuẩn CarbonGlobe
-python -m src.run_sprint1_2 --synthetic
 ```

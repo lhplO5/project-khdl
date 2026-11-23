@@ -2,7 +2,6 @@
 
 import argparse
 from pathlib import Path
-from typing import Tuple
 
 import numpy as np
 
@@ -19,71 +18,9 @@ from src.dataset import (
 from src.features import build_one_step_dataset
 from src.profiling import audit_array, audit_targets_summary, save_audit_report
 
-
-def create_synthetic_carbonglobe_files(
-    raw_dir: Path,
-    n_sites: int = 30,
-    n_ages: int = 15,
-    n_years: int = 40,
-    n_months: int = 12,
-    n_features: int = 136,
-    n_targets: int = 7,
-    seed: int = 42,
-) -> Tuple[Path, Path]:
-    """Sinh bộ file .npz/.npy giả lập theo đúng schema CarbonGlobe để chạy thử end-to-end."""
-    rng = np.random.default_rng(seed)
-    glob_dir = raw_dir / "data_global"
-    stat_dir = raw_dir / "data_stats"
-    glob_dir.mkdir(parents=True, exist_ok=True)
-    stat_dir.mkdir(parents=True, exist_ok=True)
-
-    x_train = rng.normal(15.0, 5.0, size=(n_sites, n_years, n_months, n_features)).astype(np.float32)
-    # Tạo tính chu kỳ mùa (12 tháng) cho nhóm biến khí tượng đầu tiên
-    month_wave = np.sin(np.linspace(0, 2 * np.pi, n_months, endpoint=False)).astype(np.float32)
-    x_train[:, :, :, :20] += 4.0 * month_wave[None, None, :, None]
-
-    # Tạo cấu trúc sinh trưởng theo tuổi rừng, xu hướng 40 năm và tương quan giữa 7 biến mục tiêu
-    years_axis = np.linspace(0.0, 1.0, n_years + 1, dtype=np.float32)
-    ages_axis = np.linspace(0.2, 1.0, n_ages, dtype=np.float32)
-    site_factor = rng.uniform(0.6, 1.4, size=(n_sites,)).astype(np.float32)
-
-    base_growth = (
-        ages_axis[:, None, None, None]
-        * site_factor[None, :, None, None]
-        * (1.0 + 0.35 * years_axis[None, None, :, None])
-        * (1.0 + 0.12 * month_wave[None, None, None, :])
-    )  # (n_ages, n_sites, n_years+1, n_months)
-
-    y_train = np.empty((n_ages, n_sites, n_years + 1, n_months, n_targets), dtype=np.float32)
-    scales = [25.0, 120.0, 80.0, 4.5, 18.0, 9.0, 7.5]
-    for k, sc in enumerate(scales):
-        noise = rng.normal(0.0, sc * 0.08, size=base_growth.shape).astype(np.float32)
-        y_train[..., k] = np.maximum(0.0, sc * base_growth + noise)
-
-    # Cài sẵn một ít NaN và outlier để kiểm chứng bước làm sạch
-    x_train[0, 0, 0, 0] = np.nan
-    x_train[1, 5, 3, 12] = np.nan
-    y_train[0, 0, 1, 11, 1] = 5000.0
-
-    np.savez_compressed(glob_dir / "res_train4_test8.npz", x_train=x_train, y_train=y_train)
-    np.savez(
-        stat_dir / "data_stats.npz",
-        x_mean=np.nanmean(x_train, axis=(0, 1, 2)),
-        x_std=np.maximum(np.nanstd(x_train, axis=(0, 1, 2)), 1e-3),
-        y_mean=np.nanmean(y_train, axis=(0, 1, 2, 3)),
-        y_std=np.maximum(np.nanstd(y_train, axis=(0, 1, 2, 3)), 1e-3),
-    )
-
-    mask2d = np.zeros((360, 720), dtype=np.uint8)
-    mask2d[100:110, 200 : 200 + (n_sites // 10) + 1] = 1
-    np.save(stat_dir / "mask2d.npy", mask2d)
-    return glob_dir, stat_dir
-
-
 def main() -> None:
     parser = argparse.ArgumentParser(description="Chạy pipeline CarbonGlobe Tuần 1 & Tuần 2.")
     parser.add_argument("--config", default="configs/pipeline.yaml", help="File cấu hình YAML.")
-    parser.add_argument("--synthetic", action="store_true", help="Sinh và chạy trên dữ liệu mô phỏng.")
     args = parser.parse_args()
 
     cfg = read_pipeline_config(args.config)
@@ -93,22 +30,42 @@ def main() -> None:
     interim_dir.mkdir(parents=True, exist_ok=True)
     processed_dir.mkdir(parents=True, exist_ok=True)
 
-    if args.synthetic:
-        glob_dir, stat_dir = create_synthetic_carbonglobe_files(raw_dir, seed=cfg["seed"])
-        tag = "synthetic"
-    else:
-        glob_dir = raw_dir / cfg["paths"]["global_subdir"]
-        stat_dir = raw_dir / cfg["paths"]["stats_subdir"]
-        tag = "real"
+   
+    glob_dir = raw_dir / cfg["paths"]["global_subdir"]
+    stat_dir = raw_dir / cfg["paths"]["stats_subdir"]
+    tag = "real"
 
-    max_sites = cfg["subset"]["max_sites"] if cfg["subset"]["enabled"] else None
-    data = load_ml_ready_npz(glob_dir, cfg["carbonglobe"]["ml_ready_file"], max_sites=max_sites)
+    subset_cfg = cfg.get("subset", {}) or {}
+    max_sites = subset_cfg.get("max_sites") if subset_cfg.get("enabled", False) else None
+    strategy = subset_cfg.get("strategy", "random")
+    stratify_by = subset_cfg.get("stratify_by") if strategy == "stratified" else None
+    data = load_ml_ready_npz(
+        glob_dir,
+        cfg["carbonglobe"]["ml_ready_file"],
+        max_sites=max_sites,
+        strategy=strategy,
+        seed=cfg.get("seed", 42),
+        stratify_by=stratify_by,
+        n_bins=subset_cfg.get("n_bins", 5),
+        subset_test=bool(subset_cfg.get("subset_test", False)),
+    )
     stats = load_stats(stat_dir, cfg["carbonglobe"]["stats_file"])
     mask2d = load_mask2d(stat_dir, cfg["carbonglobe"]["mask_file"])
 
     # Sprint 1: Kiểm toán chất lượng dữ liệu thô
     audit_report = {
         "source_tag": tag,
+        "subset": {
+            "enabled": bool(subset_cfg.get("enabled", False)),
+            "max_sites": max_sites,
+            "strategy": strategy,
+            "stratify_by": stratify_by,
+            "seed": cfg.get("seed", 42),
+            "subset_test": bool(subset_cfg.get("subset_test", False)),
+            "selected_sites": int(len(data["site_indices"])),
+            "site_indices": data["site_indices"].tolist(),
+            "test_sites": int(data["x_test"].shape[0]) if "x_test" in data else 0,
+        },
         "x_train_audit": audit_array(data["x_train"], "x_train"),
         "y_train_audit": audit_array(data["y_train"], "y_train"),
         "mask2d_valid_sites": int(mask2d.astype(bool).sum()),

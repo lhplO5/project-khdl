@@ -1,6 +1,6 @@
-# Project Nhập môn Khoa học dữ liệu - CarbonGlobe
+# Intro to Data Science Project  - CarbonGlobe
 
-Bài tập lớn môn Khoa học dữ liệu: xây dựng mô hình học máy thay thế bộ mô phỏng vật lý *Ecosystem Demography (ED) v3.0* để dự báo chu trình carbon và động lực học hệ sinh thái đất toàn cầu trên bộ dữ liệu **CarbonGlobe** ([IEEE BigData Cup 2026](https://www.kaggle.com/competitions/ieee-bigdata-cup-2026-ai-emulation-challenge/overview)).
+Xây dựng mô hình học máy thay thế bộ mô phỏng vật lý *Ecosystem Demography (ED) v3.0* để dự báo chu trình carbon và động lực học hệ sinh thái đất toàn cầu trên bộ dữ liệu **CarbonGlobe** ([IEEE BigData Cup 2026](https://www.kaggle.com/competitions/ieee-bigdata-cup-2026-ai-emulation-challenge/overview)).
 
 ## Bài toán đặt ra
 
@@ -26,13 +26,18 @@ project-khdl/
 python -m venv .venv
 .venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-
-# Chạy toàn bộ pipeline Tuần 1 & 2 trên dữ liệu mô phỏng
-python -m src.run_sprint1_2 --synthetic
 ```
+or use uv:
+```fish
+uv venv .venv
+uv pip install -r requirements.txt
+uv run python -m src.run_sprint1_2 
+```
+
+Với dữ liệu Kaggle thật, đặt file vào `data/raw/` rồi chạy `python -m src.run_sprint1_2`. Pipeline sẽ tự chọn **tập con 200–500 site** theo `configs/pipeline.yaml` (xem [Giao thức thực nghiệm](docs/experiment_protocol.md)).
 
 ## Lộ trình thực hiện
 
 - [X] **Tuần 1 & 2:** Đồng bộ schema `.npz`/`.npy`, dựng pipeline nạp/kiểm toán/làm sạch/tạo đặc trưng `144 -> 7`, chạy notebook EDA & kiểm thử ([Báo cáo tiến độ](docs/weekly_reports/sprint_01.md) | [Báo cáo EDA chuyên sâu](docs/eda_report.md)).
-- [ ] **Tuần 3:** Huấn luyện mô hình nền (`LightGBM`, `XGBoost`, `RandomForest`) và đánh giá autoregressive rollout 40 năm.
-- [ ] **Tuần 4:** Tối ưu siêu tham số, thử nghiệm Deep Learning trên Kaggle/Colab GPU (nếu cần) và tổng hợp báo cáo cuối kỳ.
+- [ ] **Tuần 3:** Trên **tập con dữ liệu thật 200–500 site (seeded, stratified)** — mục tiêu khoa học chính — chạy EDA, ablation, chốt đặc trưng/ngưỡng làm sạch và huấn luyện baseline (`LightGBM`, `XGBoost`, `RandomForest`); đánh giá autoregressive rollout 40 năm trên **toàn bộ test8**. Xem [Giao thức thực nghiệm](docs/experiment_protocol.md).
+- [ ] **Tuần 4:** Tinh chỉnh siêu tham số từ kết quả subset, thử nghiệm Deep Learning trên Kaggle/Colab GPU (nếu cần), xác nhận lại trên full train/test8 và tổng hợp báo cáo cuối kỳ.

@@ -24,6 +24,16 @@ cleaning:
   clip_z_range: [-10.0, 10.0]
   eps_std: 1.0e-6
 
+# Tập con dữ liệu THẬT cho Tuần 3-4: EDA, ablation, chốt ngưỡng làm sạch/đặc trưng
+# và huấn luyện baseline. Kích thước mục tiêu 200-500 site, cố định theo seed để tái lập.
 subset:
   enabled: true
   max_sites: 500
+  # random | stratified
+  # stratified: lấy mẫu tỷ lệ theo phân vị của biến mục tiêu -> phủ đủ dải sinh thái
+  # mà vẫn xấp xỉ phân phối toàn cầu của train.
+  strategy: "stratified"
+  stratify_by: "agb"
+  n_bins: 5
+  # false: giữ nguyên toàn bộ test8 (852 site) làm tập đánh giá rollout cố định.
+  subset_test: false

@@ -35,9 +35,10 @@
 ---
 
 ## 3. Kế hoạch triển khai Tuần 3 & Tuần 4
-* **Tuần 3 (Baseline Modeling & Autoregressive Evaluation):**
-  - Nạp dữ liệu Kaggle thật `res_train4_test8.npz` và `data_stats.npz` vào `data/raw/` rồi chạy `python -m src.run_sprint1_2`.
-  - Xây dựng `src/evaluate.py` cài đặt giao thức **40-year autoregressive rollout** trên tập `test8`.
+* **Tuần 3 (Real-subset EDA/Ablation & Baseline Modeling):**
+  - Nạp dữ liệu Kaggle thật vào `data/raw/` rồi chạy `python -m src.run_sprint1_2` để sinh **tập con dữ liệu thật 200–500 site** (mặc định 500, seeded, phân tầng theo `agb`) — đây là **mục tiêu khoa học chính** của đồ án, thay cho dữ liệu mô phỏng. Chi tiết: [Giao thức thực nghiệm](../experiment_protocol.md).
+  - Dùng tập con cho EDA, ablation đặc trưng, chốt ngưỡng làm sạch `clip_z_range` và chọn họ mô hình baseline; mọi kết luận phải được kiểm chứng lại bằng rollout trên **toàn bộ test8** (852 site, giữ nguyên).
+  - Xây dựng `src/evaluate.py` cài đặt giao thức **40-year autoregressive rollout** trên `test8`.
   - Huấn luyện và so sánh các mô hình nền trên CPU: `Ridge`, `RandomForestRegressor`, `LightGBM`, `XGBoost`.
 * **Tuần 4 (Tuning, Deep Learning & Báo cáo tổng kết):**
   - Tinh chỉnh siêu tham số, thử nghiệm thêm đặc trưng mùa vụ (ngoài trung bình năm) để giảm `delta error`.
