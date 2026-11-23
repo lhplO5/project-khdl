@@ -38,19 +38,40 @@ def create_synthetic_carbonglobe_files(
     stat_dir.mkdir(parents=True, exist_ok=True)
 
     x_train = rng.normal(15.0, 5.0, size=(n_sites, n_years, n_months, n_features)).astype(np.float32)
-    y_train = rng.normal(50.0, 15.0, size=(n_ages, n_sites, n_years + 1, n_months, n_targets)).astype(np.float32)
+    # Tạo tính chu kỳ mùa (12 tháng) cho nhóm biến khí tượng đầu tiên
+    month_wave = np.sin(np.linspace(0, 2 * np.pi, n_months, endpoint=False)).astype(np.float32)
+    x_train[:, :, :, :20] += 4.0 * month_wave[None, None, :, None]
+
+    # Tạo cấu trúc sinh trưởng theo tuổi rừng, xu hướng 40 năm và tương quan giữa 7 biến mục tiêu
+    years_axis = np.linspace(0.0, 1.0, n_years + 1, dtype=np.float32)
+    ages_axis = np.linspace(0.2, 1.0, n_ages, dtype=np.float32)
+    site_factor = rng.uniform(0.6, 1.4, size=(n_sites,)).astype(np.float32)
+
+    base_growth = (
+        ages_axis[:, None, None, None]
+        * site_factor[None, :, None, None]
+        * (1.0 + 0.35 * years_axis[None, None, :, None])
+        * (1.0 + 0.12 * month_wave[None, None, None, :])
+    )  # (n_ages, n_sites, n_years+1, n_months)
+
+    y_train = np.empty((n_ages, n_sites, n_years + 1, n_months, n_targets), dtype=np.float32)
+    scales = [25.0, 120.0, 80.0, 4.5, 18.0, 9.0, 7.5]
+    for k, sc in enumerate(scales):
+        noise = rng.normal(0.0, sc * 0.08, size=base_growth.shape).astype(np.float32)
+        y_train[..., k] = np.maximum(0.0, sc * base_growth + noise)
 
     # Cài sẵn một ít NaN và outlier để kiểm chứng bước làm sạch
     x_train[0, 0, 0, 0] = np.nan
+    x_train[1, 5, 3, 12] = np.nan
     y_train[0, 0, 1, 11, 1] = 5000.0
 
     np.savez_compressed(glob_dir / "res_train4_test8.npz", x_train=x_train, y_train=y_train)
     np.savez(
         stat_dir / "data_stats.npz",
-        x_mean=x_train.mean(axis=(0, 1, 2)),
-        x_std=np.maximum(x_train.std(axis=(0, 1, 2)), 1e-3),
-        y_mean=y_train.mean(axis=(0, 1, 2, 3)),
-        y_std=np.maximum(y_train.std(axis=(0, 1, 2, 3)), 1e-3),
+        x_mean=np.nanmean(x_train, axis=(0, 1, 2)),
+        x_std=np.maximum(np.nanstd(x_train, axis=(0, 1, 2)), 1e-3),
+        y_mean=np.nanmean(y_train, axis=(0, 1, 2, 3)),
+        y_std=np.maximum(np.nanstd(y_train, axis=(0, 1, 2, 3)), 1e-3),
     )
 
     mask2d = np.zeros((360, 720), dtype=np.uint8)
