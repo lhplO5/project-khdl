@@ -9,7 +9,7 @@ Thay vì chạy mô hình vật lý *Ecosystem Demography (ED)* rất tốn tài
 - **Độ dài chuỗi:** $40$ năm.
 
 ## Phân nhóm biến
-*(Sẽ cập nhật tên cột cụ thể sau khi chạy `exploration/schema_audit.ipynb`)*
+*(Sẽ cập nhật tên cột cụ thể sau khi chạy `notebooks/schema_audit.ipynb`)*
 
 - **Đầu vào (136 biến):**
   - *Khí tượng:* nhiệt độ, lượng mưa, bức xạ mặt trời, độ ẩm,...

@@ -7,7 +7,7 @@ import pandas as pd
 import yaml
 
 
-def read_settings(path: str | Path = "settings.yaml") -> Dict[str, Any]:
+def read_pipeline_config(path: str | Path = "configs/pipeline.yaml") -> Dict[str, Any]:
     """Đọc file cấu hình YAML của dự án."""
     with open(path, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)

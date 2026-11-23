@@ -7,15 +7,14 @@ Bài tập lớn môn Khoa học dữ liệu: xây dựng mô hình học máy t
 - **Biến cần dự báo:** 7 chỉ số sinh thái đầu ra (trữ lượng & thông lượng carbon, sinh khối trên mặt đất, chỉ số diện tích lá,...).
 - **Tiêu chí đánh giá:** RMSE, MAE và sai số biến thiên theo từng năm ($\Delta$ error).
 
-## Tổ chức mã nguồn
+## Tổ chức thư mục
 ```text
 project-khdl/
-├── carbonglobe/       # Thư viện xử lý dữ liệu & mô hình của nhóm
-├── datasets/          # Dữ liệu cục bộ (source / staging / ready)
-├── exploration/       # Notebook khảo sát, trực quan hóa & thử nghiệm
-├── notes/             # Ghi chú bài toán, đặc tả biến
-├── reports/           # Báo cáo tiến độ qua từng tuần
-└── settings.yaml      # Tham số đường dẫn, seed và cấu hình lấy mẫu
+├── configs/        # Tham số pipeline, đường dẫn, seed và cấu hình lấy mẫu
+├── data/           # Dữ liệu cục bộ (raw / interim / processed)
+├── docs/           # Ghi chú bài toán và báo cáo tiến độ qua từng tuần
+├── notebooks/      # Notebook khảo sát, trực quan hóa & thử nghiệm
+└── src/            # Mã nguồn Python tái sử dụng
 ```
 
 ## Cài đặt môi trường
@@ -26,7 +25,7 @@ pip install -r requirements.txt
 ```
 
 ## Lộ trình thực hiện
-- **Tuần 1:** Chốt đề tài, dựng khung package `carbonglobe`, cấu hình quy trình kiểm tra dữ liệu ([Xem báo cáo](reports/sprint_01_status.md)).
+- **Tuần 1:** Chốt đề tài, dựng khung repo, cấu hình quy trình kiểm tra dữ liệu ([Xem báo cáo](docs/weekly_reports/sprint_01.md)).
 - **Tuần 2:** Tải dữ liệu Kaggle, phân tích phân phối 136 biến & chuỗi 40 năm, hoàn thiện bộ lọc làm sạch.
 - **Tuần 3:** Tạo đặc trưng trễ theo thời gian, chạy các mô hình nền (LightGBM, XGBoost, Ridge).
 - **Tuần 4:** Tối ưu siêu tham số, thử nghiệm mạng nơ-ron (trên Colab/Kaggle GPU nếu cần) và tổng hợp kết quả.

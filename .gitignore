@@ -10,12 +10,12 @@ env/
 .ipynb_checkpoints/
 
 # Large datasets (kept locally only)
-datasets/source/*
-datasets/staging/*
-datasets/ready/*
-!datasets/source/.gitkeep
-!datasets/staging/.gitkeep
-!datasets/ready/.gitkeep
+data/raw/*
+data/interim/*
+data/processed/*
+!data/raw/.gitkeep
+!data/interim/.gitkeep
+!data/processed/.gitkeep
 
 # Trained weights & serialized artifacts
 *.pt

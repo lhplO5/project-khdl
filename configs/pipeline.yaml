@@ -1,9 +1,9 @@
 seed: 42
 
-storage:
-  source_dir: "datasets/source"
-  staging_dir: "datasets/staging"
-  ready_dir: "datasets/ready"
+paths:
+  raw_dir: "data/raw"
+  interim_dir: "data/interim"
+  processed_dir: "data/processed"
 
 schema:
   feature_count: 136
