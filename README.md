@@ -29,6 +29,6 @@ python -m src.run_sprint1_2 --synthetic
 ```
 
 ## Lộ trình thực hiện
-- [x] **Tuần 1 & 2:** Đồng bộ schema `.npz`/`.npy`, dựng pipeline nạp/kiểm toán/làm sạch/tạo đặc trưng `144 -> 7`, chạy notebook EDA & kiểm thử ([Báo cáo tiến độ](docs/weekly_reports/sprint_01.md)).
+- [x] **Tuần 1 & 2:** Đồng bộ schema `.npz`/`.npy`, dựng pipeline nạp/kiểm toán/làm sạch/tạo đặc trưng `144 -> 7`, chạy notebook EDA & kiểm thử ([Báo cáo tiến độ](docs/weekly_reports/sprint_01.md) | [Báo cáo EDA chuyên sâu](docs/eda_report.md)).
 - [ ] **Tuần 3:** Huấn luyện mô hình nền (`LightGBM`, `XGBoost`, `RandomForest`) và đánh giá autoregressive rollout 40 năm.
 - [ ] **Tuần 4:** Tối ưu siêu tham số, thử nghiệm Deep Learning trên Kaggle/Colab GPU (nếu cần) và tổng hợp báo cáo cuối kỳ.

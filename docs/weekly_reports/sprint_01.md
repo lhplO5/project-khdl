@@ -16,7 +16,7 @@
 | **Tuần 1** | Chạy notebook kiểm toán schema, phân bố 136 kênh đầu vào, 7 mục tiêu và bản đồ `mask2d` | `notebooks/schema_audit.ipynb` | Hoàn thành |
 | **Tuần 2** | Xây dựng pipeline chuẩn hóa Z-score, làm sạch NaN/Inf, Winsorizing `[-10, 10]` | `src/clean.py`, `docs/data_pipeline.md` | Hoàn thành |
 | **Tuần 2** | Xây dựng bộ tạo đặc trưng one-step-ahead (`144 -> 7`) và CLI chạy end-to-end | `src/features.py`, `src/run_sprint1_2.py` | Hoàn thành |
-| **Tuần 2** | Chạy notebook EDA chuyên sâu: trước/sau làm sạch, quỹ đạo 40 năm, ảnh hưởng tuổi rừng, ma trận tương quan & kiểm tra rò rỉ dữ liệu | `notebooks/eda_and_cleaning.ipynb` | Hoàn thành |
+| **Tuần 2** | Chạy notebook EDA chuyên sâu & xuất báo cáo trực quan hóa kèm 6 cụm biểu đồ phân tích | `notebooks/eda_and_cleaning.ipynb`, `docs/eda_report.md`, `docs/figures/` | Hoàn thành |
 | **Kiểm thử** | Viết và chạy pass kiểm thử tự động toàn bộ luồng Tuần 1 + Tuần 2 | `tests/test_pipeline.py` | Hoàn thành |
 
 ---
